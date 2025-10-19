@@ -24,15 +24,20 @@ void freeAllMemory();
 
 int main (){
 
-    int choice; 
+    int choice = 0; 
     while (choice != 4){
         printf("1) Initialize process hierarchy\n");
         printf("2) Create a new child process\n");
         printf("3) Destroy all decendants of a parent process\n");
         printf("4) Quit program and free memory\n");
 
-        scanf("%d", &choice);
-        getchar();
+        if (scanf("%d", &choice) != 1) {      // robust read
+            int ch; while ((ch = getchar()) != '\n' && ch != EOF) {}
+            puts("Invalid input. Try again.");
+            choice = 0;
+            continue;
+        }
+        getchar(); 
 
         switch (choice){
             case 1:
@@ -48,6 +53,9 @@ int main (){
                 freeAllMemory();
                 choice = 4;
                 break;
+            default: 
+                puts("Unknown choice."); 
+                break;
         }
     }
 
@@ -61,6 +69,9 @@ void initalizePCB(){
     printf("failed to allocated memory\n");
     return;
     }
+
+    pcbArr[0]->parent = 0;          
+    pcbArr[0]->children = NULL;
 
     for (int i = 1; i < MAX_PROCESSES; i++){
         pcbArr[i] = NULL;
@@ -155,21 +166,33 @@ void destroyChildrenHelper(Child* node){
 }
 
 void freeAllMemory(){
-    printf("\nFreeing all memory\n");
+   //if pcb[0] is non null
+   if(pcbArr[0] != NULL){
+    //if children of PCB is not null
+    if(pcbArr[0]->children != NULL){
+        //call recursive procedure to destroy children of PCB[0]
+        destroyChildrenHelper(pcbArr[0]->children);
+    }
+   }
+
+   //free memory of all PCB's
+   for(int i = 0; i < MAX_PROCESSES; i++){
+    free(pcbArr[i]);
+    pcbArr[i] = NULL;
+   }
+   puts("All memory freed.");
 }
 
-void printPCB(){
-    const Child *cur;
-    for (int i = 0; i < MAX_PROCESSES; i++){
+void printPCB(void) {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
         PCB *p = pcbArr[i];
-        if (pcbArr[i] != NULL){
-            
+        if (p != NULL) {
             printf("process ID: %d, parent ID: %d, children: ", i, p->parent);
 
             for (Child *c = p->children; c != NULL; c = c->next) {
-            printf("%d", c->childId);
-            if (c->next) printf(" ");
-        }
+                printf("%d", c->childId);
+                if (c->next) printf(" ");
+            }
             printf("\n");
         }
     }
